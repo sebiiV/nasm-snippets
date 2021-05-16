@@ -1,3 +1,4 @@
+    ; 32 bit hello world
     global _main
     extern  _GetStdHandle@4
     extern  _WriteFile@20

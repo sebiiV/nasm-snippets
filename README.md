@@ -42,4 +42,7 @@ You may also need to change the entrypoint:
 	Right click on the project and go to properties
 	Under Linker --> Advanced you can change the Entry Point
 	This is typically main
+# Debugging
 
+- winDBG 
+- GHIDRA
