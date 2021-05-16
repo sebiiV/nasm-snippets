@@ -3,9 +3,9 @@ SECTION .text
 global main
 
 main:
-	sub RSP,0x28					; 40 bytes of shadow space
+	sub RSP,0x28				; 40 bytes of shadow space
 	and RSP,0FFFFFFFFFFFFFFF0h		; align the stack to a multiple of 16.
-	call find_kernel32				; base addr of dll is returned in RBX
+	call find_kernel32			; base addr of dll is returned in RBX
 	call find_getProcAddress		; function addr is returned in RDI
 
 ; Finding Kernel32.dll
@@ -19,14 +19,14 @@ main:
 ;	- 0x20 off this will be the base adress
 ;--------------------------------------------------------------------
 find_kernel32:
-	xor rcx,rcx						; RCX = 0
+	xor rcx,rcx				; RCX = 0
 	mov rax, [gs:rcx+0x60]			; RAX = PEB
-	mov rax, [rax+0x18]				; RAX = PEB->ldr
+	mov rax, [rax+0x18]			; RAX = PEB->ldr
 	mov rsi, [rax+0x020]			; RSI = PEB->ldr.inMemoryOrder
 	; https://www.felixcloutier.com/x86/lods:lodsb:lodsw:lodsd:lodsq
-	lodsq							; RAX = second module (ntdll.dll)
-	xchg rax,rsi					; RAX = RSI, RSI=RAX
-	lodsq							; RAX = third module (kernel32.dll)
+	lodsq					; RAX = second module (ntdll.dll)
+	xchg rax,rsi				; RAX = RSI, RSI=RAX
+	lodsq					; RAX = third module (kernel32.dll)
 	mov rbx, [rax+0x020]			; RBX = kernel32.dll base address
 
 ; Finding GetProcAddress
@@ -43,16 +43,16 @@ find_kernel32:
 ; we liberally use 32 bit registers  to ensure we only take the offset
 ;--------------------------------------------------------------------
 find_getProcAddress:
-	xor r8 ,r8						; r8 = 0
-	mov r8d,[rbx+0x3c]				; r8d = DOS->e_lfanew offset
-	mov rdx,r8						; RDX = DOS->e_lfanew
-	add rdx,rbx						; RDX = PE header
-	mov r8d,[rdx+0x88]				; r8d = export table offset
-	add r8 ,rbx						; r8 = export table
-	xor rsi,rsi						; RSI = 0
+	xor r8 ,r8				; r8 = 0
+	mov r8d,[rbx+0x3c]			; r8d = DOS->e_lfanew offset
+	mov rdx,r8				; RDX = DOS->e_lfanew
+	add rdx,rbx				; RDX = PE header
+	mov r8d,[rdx+0x88]			; r8d = export table offset
+	add r8 ,rbx				; r8 = export table
+	xor rsi,rsi				; RSI = 0
 	mov esi, [r8 + 0x20]			; RSI = name table offset
-	add rsi,rbx						; RSI = names table
-	xor rcx,rcx						; RCX = 0. This will be the ordinal counter
+	add rsi,rbx				; RSI = names table
+	xor rcx,rcx				; RCX = 0. This will be the ordinal counter
 	mov r9, 0x41636f7250746547		; r9 = "GetProcA"
 	; At this point:
 	;	RBX = kernel32 base addr
@@ -61,20 +61,20 @@ find_getProcAddress:
 	;	r8 = export table addr
 	;	r9 = "GetProcA"
 	get_function:
-		inc rcx						; increment the ordinal counter
-		xor rax, rax				; RAX = 0
+		inc rcx				; increment the ordinal counter
+		xor rax, rax			; RAX = 0
 		mov eax, [rsi + rcx * 4]	; get name offset
-		add rax, rbx				; get function name
-		cmp QWORD [rax],r9			; Have we found GetProcAddress ?
-		jnz get_function			; we did not find it.
-		xor rsi, rsi				; RSI = 0
+		add rax, rbx			; get function name
+		cmp QWORD [rax],r9		; Have we found GetProcAddress ?
+		jnz get_function		; we did not find it.
+		xor rsi, rsi			; RSI = 0
 		mov esi, [r8 + 0x24]		; ESI = ordinals offset
-		add rsi, rbx				; RSI = ordinals table
+		add rsi, rbx			; RSI = ordinals table
 		mov cx, [rsi + rcx * 2]		; number of function.
-		xor rsi, rsi				; RSI = 0
+		xor rsi, rsi			; RSI = 0
 		mov esi, [r8 + 0x1c]		; ESI = address table offset
-		add rsi, rbx				; ESI = address table
-		xor rdx, rdx				; RDX=0
+		add rsi, rbx			; ESI = address table
+		xor rdx, rdx			; RDX=0
 		mov edx, [rsi + rcx * 4]	; EDX = Pointer offset
-		add rdx, rbx				; RDX = GetProcAddress
-		mov rdi, rdx				; Save GetProcAddress in RDI
+		add rdx, rbx			; RDX = GetProcAddress
+		mov rdi, rdx			; Save GetProcAddress in RDI
